@@ -1,0 +1,21 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "950430",
+    "database": "Videojuegosdb",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "test": {
+    "password": "950430",
+    "database": "Videojuegosdb",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "password": "950430",
+    "database": "Videojuegosdb",
+    "host": "localhost",
+    "dialect": "postgres"
+  }
+}
