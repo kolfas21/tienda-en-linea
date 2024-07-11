@@ -1,25 +1,18 @@
+// config/passport.js
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 
-// Ejemplo de usuarios en memoria (esto debería ser una base de datos en un caso real)
-const users = [{ id: 1, username: 'admin', password: 'password' }];
-
-passport.use(new LocalStrategy((username, password, done) => {
-    const user = users.find(u => u.username === username);
-    if (!user) {
-        return done(null, false, { message: 'Usuario no encontrado' });
-    }
-    if (user.password !== password) {
-        return done(null, false, { message: 'Contraseña incorrecta' });
-    }
-    return done(null, user);
-}));
-
+// Serializar usuario
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
+// Deserializar usuario
 passport.deserializeUser((id, done) => {
-    const user = users.find(u => u.id === id);
+    // Aquí normalmente buscarías al usuario en la base de datos por su ID
+    // Para simplificar, omitimos esta parte
+    const user = { id: 1, firstName: 'Admin', lastName: 'User', email: 'admin@example.com', role: 'admin' };
     done(null, user);
 });
+
+module.exports = passport;

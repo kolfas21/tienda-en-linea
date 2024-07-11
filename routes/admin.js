@@ -1,37 +1,26 @@
+// routes/admin.js
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const categoryController = require('../controllers/categoryController');
+const adminController = require('../controllers/adminController');
+const multer = require('multer');
+const path = require('path');
 const productController = require('../controllers/productController');
-const orderController = require('../controllers/orderController');
-const userController = require('../controllers/userController');
 
-// Ruta para renderizar la vista de categorías
-router.get('/categories', authMiddleware, categoryController.getAllCategories);
-// Rutas para categorías
-// Ruta para renderizar la vista de categorías
-router.get('/categories', authMiddleware, async (req, res) => {
-    const categories = await categoryController.getAllCategories();
-    res.render('admin/categories', { categories });
+// Configuración de multer para subida de archivos
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/img');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
 });
 
-router.post('/categories', authMiddleware, categoryController.createCategory);
-router.put('/categories/:id', authMiddleware, categoryController.updateCategory);
-router.delete('/categories/:id', authMiddleware, categoryController.deleteCategory);
+const upload = multer({ storage: storage });
 
-// Rutas para productos
-router.get('/products', authMiddleware, productController.getAllProducts);
-router.post('/products', authMiddleware, productController.createProduct);
-router.put('/products/:id', authMiddleware, productController.updateProduct);
-router.delete('/products/:id', authMiddleware, productController.deleteProduct);
-
-// Rutas para pedidos
-router.get('/orders', authMiddleware, orderController.getAllOrders);
-
-// Rutas para usuarios
-router.get('/users', authMiddleware, userController.getAllUsers);
-router.post('/users', authMiddleware, userController.createUser);
-router.put('/users/:id', authMiddleware, userController.updateUser);
-router.delete('/users/:id', authMiddleware, userController.deleteUser);
+router.get('/products', adminController.showProducts);
+router.post('/products', upload.single('image'), adminController.addProduct);
+router.put('/products/edit/:id', upload.single('image'), productController.updateProduct);
+router.delete('/products/:id', adminController.deleteProduct);
 
 module.exports = router;

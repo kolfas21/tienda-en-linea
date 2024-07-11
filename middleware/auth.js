@@ -1,10 +1,18 @@
-// middleware/auth.js
-module.exports = (req, res, next) => {
-    // Lógica de autenticación
-    if (req.isAuthenticated()) {
-      return next();
-    } else {
-      res.status(401).send('Unauthorized');
-    }
-  };
-  
+module.exports = {
+  ensureAuthenticated: (req, res, next) => {
+      if (req.isAuthenticated()) {
+          return next();
+      }
+      res.redirect('/login'); // Redirige a la página de inicio de sesión si no está autenticado
+  }
+};
+
+module.exports = {
+  ensureAuthenticated: function (req, res, next) {
+      if (req.isAuthenticated()) {
+          return next();
+      }
+      req.flash('error_msg', 'Por favor inicie sesión para ver esta página');
+      res.redirect('/');
+  }
+};

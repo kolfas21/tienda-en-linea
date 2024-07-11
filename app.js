@@ -1,74 +1,81 @@
+require('dotenv').config();
 const express = require('express');
-const path = require('path');
-const passport = require('passport');
-const session = require('express-session');
-const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
-const shoppingCartRouter = require('./routes/shopping-cart');
-const adminRouter = require('./routes/admin');
-const sequelize = require('./database/database');
 const methodOverride = require('method-override');
-require('./config/passport');
-//const Product = require('./models/Product');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const flash = require('connect-flash');
+const expressLayouts = require('express-ejs-layouts');
+const passport = require('passport');
+//const passport = require('./config/passport'); // Asegúrate de que la ruta es correcta
+const sequelize = require('./config/database');
+const path = require('path');
+const indexRouter = require('./routes/index');
+const userRouter = require('./routes/user');
+const adminRouter = require('./routes/admin');
+const authRouter = require('./routes/auth'); // Importa las rutas de autenticación
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Llama al método sync() para sincronizar el modelo con la base de datos
-sequelize.sync()
-    .then(() => {
-    console.log('All models were synchronized successfully.');
-    // Aquí empieza tu servidor o cualquier otra lógica de la aplicación
-    })
-    .catch(err => {
-    console.error('An error occurred while synchronizing the models:', err);
-    });
+// Middleware de Express y configuración de vistas
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(session({
+    secret: 'your_secret_key',
+    resave: false,
+    saveUninitialized:false,
+    cookie: { secure: false }
+}));
 
-// Configurar el motor de vistas
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-
-// Middleware para servir archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Middleware para sobrescribir métodos
-app.use(methodOverride('_method'));
-
-// Middleware para manejar sesiones
-app.use(session({ secret: 'secret', resave: false, saveUninitialized: true }));
-
-// Inicializar Passport y las sesiones de Passport
+app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Usar las rutas definidas
+// Configurar method-override
+app.use(methodOverride('_method'));
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(expressLayouts);
+app.set('layout', 'layouts/layout');
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
+// Middleware para pasar variables locales a las vistas
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.user = req.user || null;
+    next();
+});
+
+// Rutas
 app.use('/', indexRouter);
-app.use('/shopping-cart', shoppingCartRouter);
+app.use('/users', userRouter);
 app.use('/admin', adminRouter);
-app.use('/users', usersRouter);
+app.use('/auth', authRouter);
 
+// Manejo de errores
+app.use((err, req, res, next) => {
+    console.error('Error:', err.stack);
+    res.status(500).send('Something broke!');
+});
 
+// Sincronización y Poblamiento de la Base de Datos
+const { Category } = require('./models');
 
-// Configurar el puerto y arrancar el servidor
-async function startServer() {
-    try {
-        // Verifica la conexión a la base de datos
-        await sequelize.authenticate();
-        console.log('Connection to the database has been established successfully.');
-
-        // Configura el puerto del servidor
-        const port = process.env.PORT || 3000;
-
-        // Inicia el servidor
-        app.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
-        });
-    } catch (error) {
-        // Captura cualquier error de conexión a la base de datos
-        console.error('Unable to connect to the database:', error);
+sequelize.sync({ force: false }).then(async () => {
+    const categoriesCount = await Category.count();
+    if (categoriesCount === 0) {
+        await Category.bulkCreate([
+            { name: 'Consola' },
+            { name: 'Videojuego' },
+        ]);
     }
-}
-
-// Llama a la función para iniciar el servidor
-startServer();
-
-module.exports = app;
+    app.listen(PORT, () => {
+        console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+    });
+}).catch((error) => {
+    console.error('Error al sincronizar la base de datos:', error);
+});
